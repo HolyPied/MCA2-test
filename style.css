@@ -1554,3 +1554,18 @@ footer {
   display: block;
   padding-right: 44px; /* room for the X button */
 }
+
+/* ── NATIONS DETAIL ──────────────────────────────────────────── */
+.nation-detail-body p { margin-bottom: 1rem; }
+.nation-back-btn {
+  margin-top: 1.5rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--mid);
+  font-family: inherit;
+}
+.nation-back-btn:hover { border-color: var(--primary); color: var(--primary); }
