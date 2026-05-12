@@ -15,5 +15,15 @@ territory: Scotland
 ## The South African Empire
 founded: 2026-04-17
 
+## The Australian Tree Cult
+founded: 2026-04-17
 
+## The Roman Republic
+founded: 2026-04-17
+
+## Syrup Guzzling Central
+founded: 2026-04-17
+
+## The Empire of the Covenant
+founded: 2026-04-17
 
