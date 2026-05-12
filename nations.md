@@ -1,4 +1,4 @@
-## Ireland
+## The Republic of Ireland
 leader: RusticSheet2330
 capital: County Rector
 government: Republic
@@ -11,6 +11,7 @@ government: Diarchy
 founded: 2026-01-15
 population: 8
 territory: Scotland
+
 
 
 
