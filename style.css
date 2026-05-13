@@ -1140,25 +1140,42 @@ footer {
   gap: 8px;
 }
 
-/* Landscape flag (3:2 ratio) — default */
-.nation-flag-item img {
+/* Uniform card box — all flags get the same 3:2 container */
+.nation-flag-box {
   width: 100%;
   aspect-ratio: 3 / 2;
-  object-fit: cover;
   border-radius: 4px;
   border: 1px solid var(--border);
-  display: block;
-  image-rendering: pixelated; /* keeps MC pixel art crisp */
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-/* PMC banner (portrait, ~1:2 ratio) — show full banner, no cropping */
-.nation-flag-item img.flag-banner {
+/* Landscape flag — fill the box */
+.nation-flag-box img.flag-landscape {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* PMC banner (portrait) — scale up to fill height, centered */
+.nation-flag-box img.flag-banner {
   width: auto;
-  max-width: 60%;
-  height: auto;
-  aspect-ratio: unset;
+  height: 90%;
+  max-height: 90%;
   object-fit: contain;
-  border-radius: 2px;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* No-flag placeholder */
+.nation-flag-box .flag-placeholder {
+  font-size: 11px;
+  color: var(--mid);
 }
 
 /* Detail view flag variants */
