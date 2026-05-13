@@ -27,18 +27,12 @@ jobs:
           SITE_URL="https://mc.minecraftclubofamerica.me"
           COMMIT_URL="https://github.com/$REPO/commit/$SHA"
 
-          # Get changed files safely
+          # Changed files (safe)
           FILES=$(git diff-tree --no-commit-id --name-only -r $SHA | head -n 10)
-          FILE_LIST=""
-          while read -r file; do
-            FILE_LIST="$FILE_LIST- $file\n"
-          done <<< "$FILES"
+          FILE_LIST=$(echo "$FILES" | sed 's/^/- /')
 
           # Clean commit message
           COMMIT_MSG=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g')
-
-          # Escape files for JSON
-          FILE_LIST=$(echo -e "$FILE_LIST")
 
           curl -H "Content-Type: application/json" \
           -X POST \
@@ -46,6 +40,7 @@ jobs:
             \"embeds\": [{
               \"title\": \"🚀 Website Updated\",
               \"color\": 5814783,
+              \"description\": \"🌐 **Live Site:** $SITE_URL\",
               \"fields\": [
                 {
                   \"name\": \"👤 Updated By\",
@@ -59,31 +54,16 @@ jobs:
                 {
                   \"name\": \"📄 Changed Files\",
                   \"value\": \"${FILE_LIST:-No file changes}\"
+                },
+                {
+                  \"name\": \"🔗 Links\",
+                  \"value\": \"[View Website]($SITE_URL) • [View Commit]($COMMIT_URL)\"
                 }
               ],
               \"footer\": {
                 \"text\": \"GitHub Pages Notification\"
               },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-            }],
-            \"components\": [
-              {
-                \"type\": 1,
-                \"components\": [
-                  {
-                    \"type\": 2,
-                    \"style\": 5,
-                    \"label\": \"🌐 Open Website\",
-                    \"url\": \"$SITE_URL\"
-                  },
-                  {
-                    \"type\": 2,
-                    \"style\": 5,
-                    \"label\": \"📦 View Commit\",
-                    \"url\": \"$COMMIT_URL\"
-                  }
-                ]
-              }
-            ]
+            }]
           }" \
           $DISCORD_WEBHOOK
