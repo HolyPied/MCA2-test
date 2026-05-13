@@ -1140,6 +1140,7 @@ footer {
   gap: 8px;
 }
 
+/* Landscape flag (3:2 ratio) — default */
 .nation-flag-item img {
   width: 100%;
   aspect-ratio: 3 / 2;
@@ -1147,6 +1148,39 @@ footer {
   border-radius: 4px;
   border: 1px solid var(--border);
   display: block;
+  image-rendering: pixelated; /* keeps MC pixel art crisp */
+}
+
+/* PMC banner (portrait, ~1:2 ratio) */
+.nation-flag-item img.flag-banner {
+  width: auto;
+  height: 96px;
+  aspect-ratio: unset;
+  object-fit: contain;
+  border-radius: 2px;
+}
+
+/* Detail view flag variants */
+.flag-detail-landscape {
+  max-width: 280px;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  display: block;
+  image-rendering: pixelated;
+}
+.flag-detail-banner {
+  height: 120px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  display: block;
+  image-rendering: pixelated;
 }
 
 .nation-name {
