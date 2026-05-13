@@ -10,54 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Get commit info
-        id: commit
-        run: |
-          echo "COMMIT_MSG<<EOF" >> $GITHUB_ENV
-          git log -1 --pretty=%B >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          echo "COMMIT_AUTHOR=$(git log -1 --pretty=%an)" >> $GITHUB_ENV
-
-      - name: Send Discord webhook
+      - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           REPO="${{ github.repository }}"
-          SHA="$COMMIT_SHA"
-          ACTOR="$COMMIT_AUTHOR"
+          SHA="${{ github.sha }}"
+          ACTOR="${{ github.actor }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
 
           COMMIT_URL="https://github.com/$REPO/commit/$SHA"
           SITE_URL="https://mc.minecraftclubofamerica.me"
 
-          # escape quotes/newlines safely
-          MSG=$(echo "$COMMIT_MSG" | sed ':a;N;$!ba;s/"/\\"/g;s/\n/\\n/g')
+          # clean formatting so Discord doesn't break it
+          COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/"/\\"/g' | tr '\n' ' ')
 
           curl -H "Content-Type: application/json" \
           -X POST \
           -d "{
             \"embeds\": [{
               \"title\": \"🚀 Website Updated\",
-              \"color\": 5763719,
+              \"color\": 3447003,
               \"fields\": [
                 {
-                  \"name\": \"👤 Author\",
+                  \"name\": \"👤 Updated By\",
                   \"value\": \"$ACTOR\",
                   \"inline\": true
                 },
                 {
                   \"name\": \"📝 Commit Message\",
-                  \"value\": \"$MSG\"
+                  \"value\": \"$COMMIT_MSG\"
                 }
               ],
               \"footer\": {
-                \"text\": \"GitHub Pages Update Notification\"
+                \"text\": \"GitHub Pages Deployment\"
               },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }],
@@ -67,7 +56,7 @@ jobs:
                 {
                   \"type\": 2,
                   \"style\": 5,
-                  \"label\": \"🌐 View Website\",
+                  \"label\": \"🌐 Open Website\",
                   \"url\": \"$SITE_URL\"
                 },
                 {
