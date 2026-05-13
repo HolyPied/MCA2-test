@@ -1,4 +1,4 @@
-name: Discord Website Deployment Notification
+name: Discord Website Update Notification
 
 on:
   push:
@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Send Discord Notification
+      - name: Send Discord webhook
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
@@ -22,18 +22,18 @@ jobs:
           ACTOR="${{ github.actor }}"
           COMMIT_MSG="${{ github.event.head_commit.message }}"
 
-          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
           SITE_URL="https://mc.minecraftclubofamerica.me"
+          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
 
-          # clean formatting so Discord doesn't break it
-          COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/"/\\"/g' | tr '\n' ' ')
+          # Clean message so Discord doesn't break formatting
+          COMMIT_MSG=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g')
 
           curl -H "Content-Type: application/json" \
           -X POST \
           -d "{
             \"embeds\": [{
               \"title\": \"🚀 Website Updated\",
-              \"color\": 3447003,
+              \"color\": 5814783,
               \"fields\": [
                 {
                   \"name\": \"👤 Updated By\",
@@ -46,7 +46,7 @@ jobs:
                 }
               ],
               \"footer\": {
-                \"text\": \"GitHub Pages Deployment\"
+                \"text\": \"GitHub Pages Deployment Notification\"
               },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }],
