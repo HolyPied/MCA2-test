@@ -1,41 +1,50 @@
-name: Discord Pages Notification
+name: Discord Website Deployment Notification
 
 on:
   push:
     branches:
-      -main
+      - main
 
 jobs:
   notify:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send Discord Embed
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Get commit info + send Discord embed
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
-          COMMIT_MSG="${{ github.event.commits[0].message }}"
-          ACTOR="${{ github.actor }}"
           REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
+          ACTOR="${{ github.actor }}"
+
+          # Fetch real commit message from GitHub API
+          COMMIT_MSG=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/commits/$SHA \
+            | jq -r .commit.message)
+
+          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
           SITE_URL="https://mc.minecraftclubofamerica.me"
 
+          # Escape newlines for Discord safely
+          COMMIT_MSG=$(echo "$COMMIT_MSG" | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          # Send Discord webhook
           curl -H "Content-Type: application/json" \
           -X POST \
           -d "{
             \"embeds\": [{
               \"title\": \"🚀 Website Updated\",
-              \"description\": \"A new version of the MCA website is now live.\",
+              \"description\": \"A new update has been deployed to the website.\",
               \"color\": 5763719,
               \"fields\": [
                 {
-                  \"name\": \"👤 Updated By\",
+                  \"name\": \"👤 Author\",
                   \"value\": \"$ACTOR\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"📦 Repository\",
-                  \"value\": \"$REPO\",
                   \"inline\": true
                 },
                 {
@@ -44,7 +53,7 @@ jobs:
                 }
               ],
               \"footer\": {
-                \"text\": \"GitHub Pages Deployment Complete\"
+                \"text\": \"GitHub Pages Deployment Notification\"
               },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }],
@@ -54,13 +63,13 @@ jobs:
                 {
                   \"type\": 2,
                   \"style\": 5,
-                  \"label\": \"View Website\",
+                  \"label\": \"🌐 View Website\",
                   \"url\": \"$SITE_URL\"
                 },
                 {
                   \"type\": 2,
                   \"style\": 5,
-                  \"label\": \"View Commit\",
+                  \"label\": \"📦 View Commit\",
                   \"url\": \"$COMMIT_URL\"
                 }
               ]
