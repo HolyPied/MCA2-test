@@ -25,9 +25,8 @@ jobs:
           COMMIT_MSG="${{ github.event.head_commit.message }}"
 
           SITE_URL="https://mc.minecraftclubofamerica.me"
-          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
 
-          # Changed files (safe)
+          # Changed files (safe list, no diffs)
           FILES=$(git diff-tree --no-commit-id --name-only -r $SHA | head -n 10)
           FILE_LIST=$(echo "$FILES" | sed 's/^/- /')
 
@@ -54,10 +53,6 @@ jobs:
                 {
                   \"name\": \"📄 Changed Files\",
                   \"value\": \"${FILE_LIST:-No file changes}\"
-                },
-                {
-                  \"name\": \"🔗 Links\",
-                  \"value\": \"[View Website]($SITE_URL)\"
                 }
               ],
               \"footer\": {
