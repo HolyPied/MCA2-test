@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (full history for files)
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -27,63 +27,63 @@ jobs:
           SITE_URL="https://mc.minecraftclubofamerica.me"
           COMMIT_URL="https://github.com/$REPO/commit/$SHA"
 
-          # Changed files only
-          FILES=$(git diff-tree --no-commit-id --name-only -r $SHA)
-          FILE_LIST=$(echo "$FILES" | head -n 10 | sed 's/^/- /')
+          # Get changed files safely
+          FILES=$(git diff-tree --no-commit-id --name-only -r $SHA | head -n 10)
+          FILE_LIST=""
+          while read -r file; do
+            FILE_LIST="$FILE_LIST- $file\n"
+          done <<< "$FILES"
 
           # Clean commit message
           COMMIT_MSG=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g')
 
-          # Build JSON safely (IMPORTANT for Discord components)
-          PAYLOAD=$(cat <<EOF
-{
-  "embeds": [{
-    "title": "🚀 Website Updated",
-    "color": 5814783,
-    "fields": [
-      {
-        "name": "👤 Updated By",
-        "value": "$ACTOR",
-        "inline": true
-      },
-      {
-        "name": "📝 Commit Message",
-        "value": "$COMMIT_MSG"
-      },
-      {
-        "name": "📄 Changed Files",
-        "value": "${FILE_LIST:-No file changes detected}"
-      }
-    ],
-    "footer": {
-      "text": "GitHub Pages Notification"
-    },
-    "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  }],
-  "components": [
-    {
-      "type": 1,
-      "components": [
-        {
-          "type": 2,
-          "style": 5,
-          "label": "🌐 Open Website",
-          "url": "$SITE_URL"
-        },
-        {
-          "type": 2,
-          "style": 5,
-          "label": "📦 View Commit",
-          "url": "$COMMIT_URL"
-        }
-      ]
-    }
-  ]
-}
-EOF
-)
+          # Escape files for JSON
+          FILE_LIST=$(echo -e "$FILE_LIST")
 
           curl -H "Content-Type: application/json" \
           -X POST \
-          -d "$PAYLOAD" \
+          -d "{
+            \"embeds\": [{
+              \"title\": \"🚀 Website Updated\",
+              \"color\": 5814783,
+              \"fields\": [
+                {
+                  \"name\": \"👤 Updated By\",
+                  \"value\": \"$ACTOR\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"📝 Commit Message\",
+                  \"value\": \"$COMMIT_MSG\"
+                },
+                {
+                  \"name\": \"📄 Changed Files\",
+                  \"value\": \"${FILE_LIST:-No file changes}\"
+                }
+              ],
+              \"footer\": {
+                \"text\": \"GitHub Pages Notification\"
+              },
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }],
+            \"components\": [
+              {
+                \"type\": 1,
+                \"components\": [
+                  {
+                    \"type\": 2,
+                    \"style\": 5,
+                    \"label\": \"🌐 Open Website\",
+                    \"url\": \"$SITE_URL\"
+                  },
+                  {
+                    \"type\": 2,
+                    \"style\": 5,
+                    \"label\": \"📦 View Commit\",
+                    \"url\": \"$COMMIT_URL\"
+                  }
+                ]
+              }
+            ]
+          }" \
           $DISCORD_WEBHOOK
