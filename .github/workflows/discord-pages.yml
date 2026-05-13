@@ -57,7 +57,7 @@ jobs:
                 },
                 {
                   \"name\": \"🔗 Links\",
-                  \"value\": \"[View Website]($SITE_URL) • [View Commit]($COMMIT_URL)\"
+                  \"value\": \"[View Website]($SITE_URL)\"
                 }
               ],
               \"footer\": {
