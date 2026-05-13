@@ -26,20 +26,19 @@ let DISCORD_URL = 'https://discord.gg/hZrt28vG29';
 const PREVIEW_KEY = 'I-pG1idLnWhIjId9i1TLAumZkBQjVcvc';
 const LOCK_RAW    = 'https://raw.githubusercontent.com/lucky4life2/MCA2/main/locked.md';
 
-// Hide body immediately to prevent flash of content — revealed after lock check
+// Clear any old sessionStorage preview keys, then hide until lock check completes
 (function() {
+  sessionStorage.removeItem('mca_preview');
   const params = new URLSearchParams(window.location.search);
-  if (params.get('preview') === PREVIEW_KEY) {
-    sessionStorage.setItem('mca_preview', PREVIEW_KEY);
-  }
-  if (sessionStorage.getItem('mca_preview') !== PREVIEW_KEY) {
+  if (params.get('preview') !== PREVIEW_KEY) {
     document.documentElement.style.visibility = 'hidden';
   }
 })();
 
 (async function checkLock() {
-  // If preview key is set, reveal immediately and skip
-  if (sessionStorage.getItem('mca_preview') === PREVIEW_KEY) {
+  // If preview key is in the URL, reveal immediately and skip
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('preview') === PREVIEW_KEY) {
     document.documentElement.style.visibility = '';
     return;
   }
@@ -185,7 +184,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.1</span>
+    <span class="footer-version">v2.4.3</span>
   </div>
 </footer>
 `;
