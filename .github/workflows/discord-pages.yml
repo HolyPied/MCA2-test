@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repo (full history for diff)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Send Discord webhook
         env:
@@ -22,10 +24,16 @@ jobs:
           ACTOR="${{ github.actor }}"
           COMMIT_MSG="${{ github.event.head_commit.message }}"
 
-          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
           SITE_URL="https://mc.minecraftclubofamerica.me"
+          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
 
-          # Clean message so Discord doesn't break formatting
+          # Get list of changed files (names only, no diff)
+          FILES=$(git diff-tree --no-commit-id --name-only -r $SHA)
+
+          # Format files for Discord (limit length so embed doesn't break)
+          FILE_LIST=$(echo "$FILES" | head -n 15 | sed 's/^/- /')
+
+          # Clean commit message
           COMMIT_MSG=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g')
 
           curl -H "Content-Type: application/json" \
@@ -43,10 +51,14 @@ jobs:
                 {
                   \"name\": \"📝 Commit Message\",
                   \"value\": \"$COMMIT_MSG\"
+                },
+                {
+                  \"name\": \"📄 Changed Files\",
+                  \"value\": \"${FILE_LIST:-No file changes detected}\"
                 }
               ],
               \"footer\": {
-                \"text\": \"GitHub Pages Notification\"
+                \"text\": \"GitHub Pages Deployment Notification\"
               },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }],
