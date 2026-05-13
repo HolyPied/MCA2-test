@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (full history for diff)
+      - name: Checkout repo (full history for file list)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -27,13 +27,11 @@ jobs:
           SITE_URL="https://mc.minecraftclubofamerica.me"
           COMMIT_URL="https://github.com/$REPO/commit/$SHA"
 
-          # Get list of changed files (names only, no diff)
+          # Get changed file names only (no diffs)
           FILES=$(git diff-tree --no-commit-id --name-only -r $SHA)
-
-          # Format files for Discord (limit length so embed doesn't break)
           FILE_LIST=$(echo "$FILES" | head -n 15 | sed 's/^/- /')
 
-          # Clean commit message
+          # Clean commit message for Discord
           COMMIT_MSG=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g')
 
           curl -H "Content-Type: application/json" \
@@ -62,22 +60,18 @@ jobs:
               },
               \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
             }],
-            \"components\": [{
-              \"type\": 1,
-              \"components\": [
-                {
-                  \"type\": 2,
-                  \"style\": 5,
-                  \"label\": \"🌐 Open Website\",
-                  \"url\": \"$SITE_URL\"
-                },
-                {
-                  \"type\": 2,
-                  \"style\": 5,
-                  \"label\": \"📦 View Commit\",
-                  \"url\": \"$COMMIT_URL\"
-                }
-              ]
-            }]
+            \"components\": [
+              {
+                \"type\": 1,
+                \"components\": [
+                  {
+                    \"type\": 2,
+                    \"style\": 5,
+                    \"label\": \"🌐 Open Website\",
+                    \"url\": \"$SITE_URL\"
+                  }
+                ]
+              }
+            ]
           }" \
           $DISCORD_WEBHOOK
