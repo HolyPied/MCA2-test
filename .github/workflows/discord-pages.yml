@@ -24,7 +24,7 @@ jobs:
           ACTOR="${{ github.actor }}"
           COMMIT_MSG="${{ github.event.head_commit.message }}"
 
-          SITE_URL="https://mc.minecraftclubofamerica.me"
+          SITE_URL="https://minecraftclubofamerica.me"
 
           # Changed files (safe list, no diffs)
           FILES=$(git diff-tree --no-commit-id --name-only -r $SHA | head -n 10)
