@@ -1,7 +1,9 @@
 name: Discord Pages Notification
 
 on:
-  page_build
+  push:
+    branches:
+      -main
 
 jobs:
   notify:
@@ -12,8 +14,8 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          COMMIT_URL="${{ github.event.head_commit.url }}"
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          COMMIT_MSG="${{ github.event.commits[0].message }}"
           ACTOR="${{ github.actor }}"
           REPO="${{ github.repository }}"
           SITE_URL="https://mc.minecraftclubofamerica.me"
