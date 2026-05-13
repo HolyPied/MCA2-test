@@ -1151,10 +1151,11 @@ footer {
   image-rendering: pixelated; /* keeps MC pixel art crisp */
 }
 
-/* PMC banner (portrait, ~1:2 ratio) */
+/* PMC banner (portrait, ~1:2 ratio) — show full banner, no cropping */
 .nation-flag-item img.flag-banner {
   width: auto;
-  height: 96px;
+  max-width: 60%;
+  height: auto;
   aspect-ratio: unset;
   object-fit: contain;
   border-radius: 2px;
@@ -1173,7 +1174,8 @@ footer {
   image-rendering: pixelated;
 }
 .flag-detail-banner {
-  height: 120px;
+  height: auto;
+  max-height: 200px;
   width: auto;
   object-fit: contain;
   border-radius: 2px;
