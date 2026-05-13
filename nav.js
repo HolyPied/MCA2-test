@@ -26,30 +26,44 @@ let DISCORD_URL = 'https://discord.gg/hZrt28vG29';
 const PREVIEW_KEY = 'I-pG1idLnWhIjId9i1TLAumZkBQjVcvc';
 const LOCK_RAW    = 'https://raw.githubusercontent.com/lucky4life2/MCA2/main/locked.md';
 
-(async function checkLock() {
-  // Check for preview key in URL or session
+// Hide body immediately to prevent flash of content — revealed after lock check
+(function() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('preview') === PREVIEW_KEY) {
     sessionStorage.setItem('mca_preview', PREVIEW_KEY);
   }
-  if (sessionStorage.getItem('mca_preview') === PREVIEW_KEY) return;
+  if (sessionStorage.getItem('mca_preview') !== PREVIEW_KEY) {
+    document.documentElement.style.visibility = 'hidden';
+  }
+})();
+
+(async function checkLock() {
+  // If preview key is set, reveal immediately and skip
+  if (sessionStorage.getItem('mca_preview') === PREVIEW_KEY) {
+    document.documentElement.style.visibility = '';
+    return;
+  }
 
   try {
     const res = await fetch(LOCK_RAW + '?nocache=' + Date.now());
-    if (!res.ok) return;
+    if (!res.ok) { document.documentElement.style.visibility = ''; return; }
     const cfg = {};
     (await res.text()).split('\n').forEach(line => {
       if (line.startsWith('#') || !line.trim()) return;
       const c = line.indexOf(':');
       if (c > 0) cfg[line.slice(0,c).trim()] = line.slice(c+1).trim();
     });
-    if (cfg.locked !== 'true') return;
-
-    // Lock the page
-    document.documentElement.style.visibility = 'hidden';
+    if (cfg.locked !== 'true') {
+      document.documentElement.style.visibility = '';
+      return;
+    }
+    // Show lock screen
     document.addEventListener('DOMContentLoaded', () => showLockScreen(cfg));
     if (document.readyState !== 'loading') showLockScreen(cfg);
-  } catch(e) {}
+  } catch(e) {
+    // On any error, reveal the page so it doesn't stay hidden forever
+    document.documentElement.style.visibility = '';
+  }
 })();
 
 function showLockScreen(cfg) {
@@ -171,7 +185,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.0</span>
+    <span class="footer-version">v2.4.1</span>
   </div>
 </footer>
 `;
