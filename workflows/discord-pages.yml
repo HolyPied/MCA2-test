@@ -1,0 +1,67 @@
+name: Discord Pages Notification
+
+on:
+  page_build
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord Embed
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          COMMIT_URL="${{ github.event.head_commit.url }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          ACTOR="${{ github.actor }}"
+          REPO="${{ github.repository }}"
+          SITE_URL="https://mc.minecraftclubofamerica.me"
+
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "{
+            \"embeds\": [{
+              \"title\": \"🚀 Website Updated\",
+              \"description\": \"A new version of the MCA website is now live.\",
+              \"color\": 5763719,
+              \"fields\": [
+                {
+                  \"name\": \"👤 Updated By\",
+                  \"value\": \"$ACTOR\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"📦 Repository\",
+                  \"value\": \"$REPO\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"📝 Commit Message\",
+                  \"value\": \"$COMMIT_MSG\"
+                }
+              ],
+              \"footer\": {
+                \"text\": \"GitHub Pages Deployment Complete\"
+              },
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }],
+            \"components\": [{
+              \"type\": 1,
+              \"components\": [
+                {
+                  \"type\": 2,
+                  \"style\": 5,
+                  \"label\": \"View Website\",
+                  \"url\": \"$SITE_URL\"
+                },
+                {
+                  \"type\": 2,
+                  \"style\": 5,
+                  \"label\": \"View Commit\",
+                  \"url\": \"$COMMIT_URL\"
+                }
+              ]
+            }]
+          }" \
+          $DISCORD_WEBHOOK
