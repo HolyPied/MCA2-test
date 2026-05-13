@@ -22,6 +22,88 @@ let DISCORD_URL = 'https://discord.gg/hZrt28vG29';
   } catch(e) {}
 })();
 
+/* ── SITE LOCK ──────────────────────────────────────────────── */
+const PREVIEW_KEY = 'I-pG1idLnWhIjId9i1TLAumZkBQjVcvc';
+const LOCK_RAW    = 'https://raw.githubusercontent.com/lucky4life2/MCA2/main/locked.md';
+
+(async function checkLock() {
+  // Check for preview key in URL or session
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('preview') === PREVIEW_KEY) {
+    sessionStorage.setItem('mca_preview', PREVIEW_KEY);
+  }
+  if (sessionStorage.getItem('mca_preview') === PREVIEW_KEY) return;
+
+  try {
+    const res = await fetch(LOCK_RAW + '?nocache=' + Date.now());
+    if (!res.ok) return;
+    const cfg = {};
+    (await res.text()).split('\n').forEach(line => {
+      if (line.startsWith('#') || !line.trim()) return;
+      const c = line.indexOf(':');
+      if (c > 0) cfg[line.slice(0,c).trim()] = line.slice(c+1).trim();
+    });
+    if (cfg.locked !== 'true') return;
+
+    // Lock the page
+    document.documentElement.style.visibility = 'hidden';
+    document.addEventListener('DOMContentLoaded', () => showLockScreen(cfg));
+    if (document.readyState !== 'loading') showLockScreen(cfg);
+  } catch(e) {}
+})();
+
+function showLockScreen(cfg) {
+  document.documentElement.style.visibility = '';
+  document.body.innerHTML = `
+    <div style="
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background:#f5f6f8;
+      font-family:'Open Sans',sans-serif;
+      padding:2rem;
+      text-align:center;
+    ">
+      <img src="/images/logo.png" alt="MCA Logo" style="width:72px;height:72px;object-fit:contain;margin-bottom:1.5rem;" onerror="this.style.display='none'">
+      <div style="
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:2px;
+        text-transform:uppercase;
+        color:#18489e;
+        margin-bottom:0.75rem;
+      ">Site Locked</div>
+      <h1 style="
+        font-family:'Times New Roman',serif;
+        font-size:clamp(1.6rem,4vw,2.4rem);
+        color:#1a1a2e;
+        margin:0 0 1.25rem;
+        font-weight:normal;
+        max-width:560px;
+        line-height:1.3;
+      ">The MCA Website is<br>Temporarily Unavailable</h1>
+      ${cfg.reason ? `<p style="font-size:15px;color:#555;max-width:480px;line-height:1.6;margin:0 0 1rem;">${cfg.reason}</p>` : ''}
+      ${cfg.return_time ? `
+      <div style="
+        display:inline-block;
+        margin-top:0.75rem;
+        padding:10px 20px;
+        background:#fff;
+        border:1px solid #dde1ea;
+        border-radius:6px;
+        font-size:13px;
+        color:#18489e;
+        font-weight:600;
+      ">Expected return: ${cfg.return_time}</div>` : ''}
+      <p style="margin-top:3rem;font-size:11px;color:#aaa;letter-spacing:0.5px;">
+        MINECRAFT CLUB OF AMERICA
+      </p>
+    </div>`;
+}
+
+
 const NAV_HTML = `
 <nav>
   <a class="nav-logo" href="index.html">
@@ -89,7 +171,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.3.67</span>
+    <span class="footer-version">v2.4.0</span>
   </div>
 </footer>
 `;
