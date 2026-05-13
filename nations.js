@@ -79,7 +79,7 @@ function renderGrid(nations) {
 
   grid.innerHTML = nations.map((n, i) => {
     const flagHtml = n.flag
-      ? `<img src="images/${n.flag}" alt="${n.name} flag">`
+      ? `<img src="images/flags/${n.flag}" alt="${n.name} flag">`
       : `<div style="width:100%;aspect-ratio:3/2;background:var(--surface);border-radius:4px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;"><span style="font-size:11px;color:var(--mid);">No flag</span></div>`;
     return `
       <div class="nation-flag-item" onclick="openNationDetail(${i})" style="cursor:pointer;" title="View ${n.name}">
@@ -116,7 +116,7 @@ function openNationDetail(i) {
   const extraFields = n.fields || [];
 
   const flagHtml = n.flag
-    ? `<img src="images/${n.flag}" alt="${n.name} flag" style="max-width:220px;border-radius:4px;border:1px solid var(--border);margin-bottom:1.5rem;display:block;">`
+    ? `<img src="images/flags/${n.flag}" alt="${n.name} flag" style="max-width:220px;border-radius:4px;border:1px solid var(--border);margin-bottom:1.5rem;display:block;">`
     : '';
 
   const tableRows = [...coreFields, ...extraFields.map(f => [f.key, f.value])]

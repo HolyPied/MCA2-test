@@ -11,6 +11,7 @@ government: Diarchy
 founded: 2026-01-15
 population: 7
 territory: Scotland
+flag: flag-Iceridge.png
 
 ## The South African Empire
 founded: 2026-04-17
