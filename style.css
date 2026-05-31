@@ -14,6 +14,43 @@
   --white:       #ffffff;
 }
 
+/* ── DARK MODE ── */
+[data-theme="dark"] {
+  --black:   #e8eaf0;
+  --mid:     #adb3c2;
+  --muted:   #7a8299;
+  --border:  #2a3147;
+  --bg:      #111620;
+  --white:   #1a2035;
+}
+[data-theme="dark"] body  { background: var(--bg); color: var(--black); }
+[data-theme="dark"] nav   { background: var(--white); border-bottom-color: var(--border); }
+[data-theme="dark"] footer { background: var(--white); border-top-color: var(--border); }
+[data-theme="dark"] .nav-links { background: var(--white); }
+[data-theme="dark"] .section-image figcaption { background: var(--white); }
+
+/* Dark mode toggle button */
+.nav-theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.nav-theme-toggle:hover { color: var(--blue); background: var(--border); }
+.nav-theme-toggle svg { display: block; }
+.nav-theme-toggle .icon-sun  { display: none; }
+.nav-theme-toggle .icon-moon { display: block; }
+[data-theme="dark"] .nav-theme-toggle .icon-sun  { display: block; }
+[data-theme="dark"] .nav-theme-toggle .icon-moon { display: none; }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
