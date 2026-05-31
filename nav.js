@@ -195,7 +195,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.5</span>
+    <span class="footer-version">v2.4.6</span>
   </div>
 </footer>
 `;
@@ -205,21 +205,6 @@ const TOAST_HTML = `<div class="toast" id="toast">Address copied to clipboard</d
 const PROGRESS_HTML = `<div class="scroll-progress" id="scroll-progress"></div>`;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Dark mode toggle
-  const themeToggle = document.getElementById('nav-theme-toggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      if (isDark) {
-        document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('mca_theme', 'light');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('mca_theme', 'dark');
-      }
-    });
-  }
-
   // Inject nav
   document.body.insertAdjacentHTML('afterbegin', NAV_HTML);
 
@@ -242,6 +227,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Auto-update year in footer
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // Dark mode toggle
+  const themeToggle = document.getElementById('nav-theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('mca_theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('mca_theme', 'dark');
+      }
+    });
+  }
 
   // Highlight active nav link based on current filename
   const current = window.location.pathname.split('/').pop() || 'index.html';
