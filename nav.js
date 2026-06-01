@@ -195,10 +195,10 @@ const FOOTER_HTML = `
           YouTube
         </a>
         <!-- FIX 1: Added missing closing > on the anchor tag -->
-        <a href="#" onclick="navigator.clipboard.writeText('minecraftclubofamericaofficial@gmail.com').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.innerHTML='<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z\"/><polyline points=\"22,6 12,13 2,6\"/></svg> Email Us'},2000)});return false;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Email Us
-        </a>
+        <a href="#" onclick="copyEmail(this);return false;">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+  Email Us
+</a>
       </div>
     </div>
 
@@ -312,4 +312,12 @@ function copyAddress() {
   if (!t) return;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function copyEmail(el) {
+  navigator.clipboard.writeText('minecraftclubofamericaofficial@gmail.com').then(() => {
+    const original = el.innerHTML;
+    el.textContent = 'Copied!';
+    setTimeout(() => { el.innerHTML = original; }, 2000);
+  }).catch(() => {});
 }
