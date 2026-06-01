@@ -72,16 +72,6 @@ const LOCK_RAW    = 'https://raw.githubusercontent.com/lucky4life2/MCA2/main/loc
   }
 })();
 
-// FIX 2: Sanitize config values before injecting into innerHTML
-function escapeHTML(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function showLockScreen(cfg) {
   document.documentElement.style.visibility = '';
   document.body.innerHTML = `
@@ -114,7 +104,7 @@ function showLockScreen(cfg) {
         max-width:560px;
         line-height:1.3;
       ">The MCA Website is<br>Temporarily Unavailable</h1>
-      ${cfg.reason ? `<p style="font-size:15px;color:#555;max-width:480px;line-height:1.6;margin:0 0 1rem;">${escapeHTML(cfg.reason)}</p>` : ''}
+      ${cfg.reason ? `<p style="font-size:15px;color:#555;max-width:480px;line-height:1.6;margin:0 0 1rem;">${cfg.reason}</p>` : ''}
       ${cfg.return_time ? `
       <div style="
         display:inline-block;
@@ -126,7 +116,7 @@ function showLockScreen(cfg) {
         font-size:13px;
         color:#18489e;
         font-weight:600;
-      ">Expected return: ${escapeHTML(cfg.return_time)}</div>` : ''}
+      ">Expected return: ${cfg.return_time}</div>` : ''}
       <p style="margin-top:3rem;font-size:11px;color:#aaa;letter-spacing:0.5px;">
         MINECRAFT CLUB OF AMERICA
       </p>
@@ -194,11 +184,10 @@ const FOOTER_HTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
           YouTube
         </a>
-        <!-- FIX 1: Added missing closing > on the anchor tag -->
-        <a href="#" onclick="copyEmail(this);return false;">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-  Email Us
-</a>
+        <a href="#" onclick="navigator.clipboard.writeText('minecraftclubofamericaofficial@gmail.com').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.innerHTML='<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z\"/><polyline points=\"22,6 12,13 2,6\"/></svg> Email Us'},2000)});return false;"
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Us
+        </a>
       </div>
     </div>
 
@@ -206,7 +195,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.8</span>
+    <span class="footer-version">v2.4.9</span>
   </div>
 </footer>
 `;
@@ -227,16 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Drive the progress bar on scroll
   const bar = document.getElementById('scroll-progress');
-  // FIX 3: Guard against bar being null before attaching listener
-  if (bar) {
-    function updateProgress() {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      bar.style.width = docHeight > 0 ? (scrollTop / docHeight * 100) + '%' : '0%';
-    }
-    window.addEventListener('scroll', updateProgress, { passive: true });
-    updateProgress(); // set initial state
+  function updateProgress() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = docHeight > 0 ? (scrollTop / docHeight * 100) + '%' : '0%';
   }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress(); // set initial state
 
   // Auto-update year in footer
   const yearEl = document.getElementById('year');
@@ -312,12 +298,4 @@ function copyAddress() {
   if (!t) return;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-function copyEmail(el) {
-  navigator.clipboard.writeText('minecraftclubofamericaofficial@gmail.com').then(() => {
-    const original = el.innerHTML;
-    el.textContent = 'Copied!';
-    setTimeout(() => { el.innerHTML = original; }, 2000);
-  }).catch(() => {});
 }
