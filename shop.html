@@ -426,10 +426,13 @@
   const elModal     = document.getElementById('product-modal');
   const elModalTitle = document.getElementById('modal-title');
 
+
   // ── Auth gate ────────────────────────────────────────────────
-  async function init() {
+  async function showShopOrGate() {
     const admin = await isAdmin();
     elLoading.style.display = 'none';
+    elGate.style.display = 'none';
+    elShop.style.display = 'none';
     if (admin) {
       elShop.style.display = 'block';
       loadProducts();
@@ -438,25 +441,16 @@
     }
   }
 
-  // Handle OAuth redirect
-  supabase.auth.onAuthStateChange(async (event) => {
-    if (event === 'SIGNED_IN') {
-      elGate.style.display = 'none';
-      elLoading.style.display = 'flex';
-      const admin = await isAdmin();
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth event:', event, session?.user?.id);
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      await showShopOrGate();
+    } else if (event === 'SIGNED_OUT') {
       elLoading.style.display = 'none';
-      if (admin) {
-        elShop.style.display = 'block';
-        loadProducts();
-      } else {
-        elGate.style.display = 'block';
-        document.getElementById('login-error').textContent = 'Your account does not have admin access.';
-        document.getElementById('login-error').style.display = 'block';
-      }
+      elShop.style.display = 'none';
+      elGate.style.display = 'block';
     }
   });
-
-  init();
 
   // ── Login handlers ───────────────────────────────────────────
   document.getElementById('btn-discord-login').addEventListener('click', signInWithDiscord);
