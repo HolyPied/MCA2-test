@@ -129,13 +129,22 @@ const NAV_HTML = `
   <a class="nav-logo" href="index.html">
     <img src="images/widelogo.png" alt="Minecraft Club of America" class="nav-logo-img">
   </a>
-  <button class="nav-theme-toggle" id="nav-theme-toggle" aria-label="Toggle dark mode">
-    <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-  </button>
-  <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu">
-    <span></span><span></span><span></span>
-  </button>
+  <div class="nav-right">
+    <button class="nav-theme-toggle" id="nav-theme-toggle" aria-label="Toggle dark mode">
+      <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="nav-cart-btn" id="nav-cart-btn" aria-label="Cart" style="display:none;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="nav-cart-count" id="nav-cart-count" style="display:none;">0</span>
+    </button>
+    <div class="nav-account" id="nav-account">
+      <!-- Injected by nav auth init -->
+    </div>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
   <ul class="nav-links" id="nav-links">
     <li><a href="index.html"      data-page="index">Home</a></li>
     <li><a href="server.html"     data-page="server">Server</a></li>
@@ -195,7 +204,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.10</span>
+    <span class="footer-version">v2.4.11</span>
   </div>
 </footer>
 `;
@@ -299,3 +308,84 @@ function copyAddress() {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
+
+// ── Nav auth + cart ───────────────────────────────────────────
+// Runs after DOMContentLoaded so the nav is already injected.
+// Dynamically imports supabase to avoid breaking non-shop pages
+// if the module ever fails to load.
+(async function initNavAuth() {
+  const accountEl  = document.getElementById('nav-account');
+  const cartBtn    = document.getElementById('nav-cart-btn');
+  const cartCount  = document.getElementById('nav-cart-count');
+  if (!accountEl) return;
+
+  function updateCartBadge(userId) {
+    if (!userId || !cartBtn) return;
+    try {
+      const raw   = localStorage.getItem('mca_cart_' + userId);
+      const items = raw ? JSON.parse(raw) : [];
+      const total = items.reduce((s, i) => s + (i.qty || 1), 0);
+      cartBtn.style.display = '';
+      if (total > 0) {
+        cartCount.textContent    = total > 99 ? '99+' : total;
+        cartCount.style.display  = '';
+      } else {
+        cartCount.style.display  = 'none';
+      }
+    } catch(e) {}
+  }
+
+  function setSignedOut() {
+    accountEl.innerHTML = `<a class="nav-account-btn" href="login.html?return=${encodeURIComponent(window.location.pathname.split('/').pop() || 'index.html')}">Sign In</a>`;
+    if (cartBtn) cartBtn.style.display = 'none';
+  }
+
+  function setSignedIn(user) {
+    const label = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Account';
+    accountEl.innerHTML = `
+      <div class="nav-account-wrap" id="nav-account-wrap">
+        <button class="nav-account-btn nav-account-user" id="nav-account-user-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          ${label}
+        </button>
+        <div class="nav-account-dropdown" id="nav-account-dropdown">
+          <button class="nav-account-dropdown-item" id="nav-signout-btn">Sign Out</button>
+        </div>
+      </div>`;
+    updateCartBadge(user.id);
+
+    document.getElementById('nav-account-user-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('nav-account-dropdown').classList.toggle('open');
+    });
+    document.addEventListener('click', () => {
+      document.getElementById('nav-account-dropdown')?.classList.remove('open');
+    });
+    document.getElementById('nav-signout-btn').addEventListener('click', async () => {
+      try {
+        const mod = await import('./supabase.js');
+        await mod.signOut();
+      } catch(e) {}
+      window.location.reload();
+    });
+  }
+
+  try {
+    const mod = await import('./supabase.js');
+    const { data: { user } } = await mod.supabase.auth.getUser();
+    if (user) {
+      setSignedIn(user);
+    } else {
+      setSignedOut();
+    }
+    mod.supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) setSignedIn(session.user);
+      else setSignedOut();
+    });
+    window._mcaUpdateCartBadge = () => {
+      mod.supabase.auth.getUser().then(({ data: { user } }) => { if (user) updateCartBadge(user.id); });
+    };
+  } catch(e) {
+    setSignedOut();
+  }
+})();

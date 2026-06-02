@@ -513,6 +513,28 @@
 
 </div><!-- /.page-wrap -->
 
+<!-- Cart drawer -->
+<div class="cart-overlay" id="cart-overlay"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-drawer-header">
+    <div class="cart-drawer-title">Your Cart</div>
+    <button class="cart-drawer-close" id="cart-drawer-close">✕</button>
+  </div>
+  <div class="cart-drawer-body" id="cart-drawer-body">
+    <div class="cart-empty">
+      <div class="cart-empty-icon">🛒</div>
+      <p>Your cart is empty.</p>
+    </div>
+  </div>
+  <div class="cart-drawer-footer" id="cart-drawer-footer" style="display:none;">
+    <div class="cart-subtotal">
+      <span class="cart-subtotal-label">Subtotal</span>
+      <span class="cart-subtotal-amount" id="cart-subtotal">$0.00</span>
+    </div>
+    <button class="btn-checkout" id="btn-checkout">Checkout — Coming Soon</button>
+  </div>
+</div>
+
 <!-- Add / Edit Product Modal -->
 <div class="modal-overlay" id="product-modal">
   <div class="modal">
@@ -569,58 +591,115 @@
 <script type="module">
   import { supabase, isAdmin, signInWithDiscord, signInWithEmail, signOut } from './supabase.js';
 
-  // ── State ─────────────────────────────────────────────────────
-  let _isAdmin       = false;
-  let _memberPreview = false;         // admin toggled "View as Member"
-  let _cartEnabled   = false;         // admin toggle for Add to Cart button
+  // ── State
+  let _isAdmin = false, _isLoggedIn = false, _userId = null, _memberPreview = false, _cartEnabled = false;
 
-  const CART_KEY = 'mca_cart_enabled'; // localStorage key for cart toggle persistence
+  // ── Cart helpers
+  function cartKey() { return 'mca_cart_' + _userId; }
+  function getCart() {
+    if (!_userId) return [];
+    try { return JSON.parse(localStorage.getItem(cartKey())) || []; } catch(e) { return []; }
+  }
+  function saveCart(items) {
+    if (!_userId) return;
+    localStorage.setItem(cartKey(), JSON.stringify(items));
+    if (window._mcaUpdateCartBadge) window._mcaUpdateCartBadge();
+  }
+  function addToCart(product) {
+    const items = getCart();
+    const ex = items.find(i => i.id === product.id);
+    if (ex) { ex.qty = (ex.qty || 1) + 1; } else { items.push({...product, qty: 1}); }
+    saveCart(items);
+    renderCartDrawer();
+    openCartDrawer();
+  }
+  function removeFromCart(id) { saveCart(getCart().filter(i => i.id !== id)); renderCartDrawer(); }
+  function changeQty(id, d) {
+    const items = getCart(), item = items.find(i => i.id === id);
+    if (!item) return;
+    item.qty = Math.max(1, (item.qty || 1) + d);
+    saveCart(items); renderCartDrawer();
+  }
+  window.cartQty    = (id, d) => changeQty(id, d);
+  window.cartRemove = (id)    => removeFromCart(id);
+  window.shopAddToCart = (p)  => addToCart(p);
 
-  // ── Element refs ──────────────────────────────────────────────
-  const elLoading      = document.getElementById('shop-loading');
-  const elShop         = document.getElementById('shop-wrap');
-  const elAdminBar     = document.getElementById('shop-admin-bar');
-  const elLoginStrip   = document.getElementById('admin-login-strip');
-  const elPreviewBar   = document.getElementById('member-preview-bar');
-  const elGrid         = document.getElementById('product-grid');
-  const elCount        = document.getElementById('product-count');
-  const elModal        = document.getElementById('product-modal');
-  const elModalTitle   = document.getElementById('modal-title');
-  const elCartToggle   = document.getElementById('cart-toggle');
+  // ── Cart drawer
+  const elCartOverlay  = document.getElementById('cart-overlay');
+  const elCartDrawer   = document.getElementById('cart-drawer');
+  const elCartBody     = document.getElementById('cart-drawer-body');
+  const elCartFooter   = document.getElementById('cart-drawer-footer');
+  const elCartSubtotal = document.getElementById('cart-subtotal');
 
-  // ── Render helper: apply current state to the DOM ────────────
+  function openCartDrawer()  { elCartOverlay.classList.add('open'); elCartDrawer.classList.add('open'); }
+  function closeCartDrawer() { elCartOverlay.classList.remove('open'); elCartDrawer.classList.remove('open'); }
+
+  document.getElementById('cart-drawer-close').addEventListener('click', closeCartDrawer);
+  elCartOverlay.addEventListener('click', closeCartDrawer);
+
+  const navCartBtn = document.getElementById('nav-cart-btn');
+  if (navCartBtn) navCartBtn.addEventListener('click', () => { renderCartDrawer(); openCartDrawer(); });
+
+  function renderCartDrawer() {
+    const items = getCart();
+    if (items.length === 0) {
+      elCartBody.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>Your cart is empty.</p></div>';
+      elCartFooter.style.display = 'none'; return;
+    }
+    const sub = items.reduce((s, i) => s + (i.price * (i.qty || 1)), 0);
+    elCartBody.innerHTML = items.map(i => `
+      <div class="cart-item" data-id="${i.id}">
+        ${i.image_url
+          ? `<img class="cart-item-img" src="${i.image_url}" alt="${i.name}">`
+          : `<div class="cart-item-img-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>`}
+        <div class="cart-item-info">
+          <div class="cart-item-name">${i.name}</div>
+          <div class="cart-item-price">$${Number(i.price).toFixed(2)} each</div>
+          <div class="cart-item-controls">
+            <button class="cart-qty-btn" onclick="cartQty('${i.id}',-1)">−</button>
+            <span class="cart-qty">${i.qty || 1}</span>
+            <button class="cart-qty-btn" onclick="cartQty('${i.id}',1)">+</button>
+            <button class="cart-item-remove" onclick="cartRemove('${i.id}')">Remove</button>
+          </div>
+        </div>
+      </div>`).join('');
+    elCartSubtotal.textContent = '$' + sub.toFixed(2);
+    elCartFooter.style.display = '';
+  }
+
+  // ── Element refs
+  const elLoading    = document.getElementById('shop-loading');
+  const elShop       = document.getElementById('shop-wrap');
+  const elAdminBar   = document.getElementById('shop-admin-bar');
+  const elLoginStrip = document.getElementById('admin-login-strip');
+  const elPreviewBar = document.getElementById('member-preview-bar');
+  const elGrid       = document.getElementById('product-grid');
+  const elCount      = document.getElementById('product-count');
+  const elModal      = document.getElementById('product-modal');
+  const elModalTitle = document.getElementById('modal-title');
+  const elCartToggle = document.getElementById('cart-toggle');
+
+  // ── Apply state to DOM
   function applyState() {
-    const showAdminUI = _isAdmin && !_memberPreview;
-
-    // Admin bar / login strip
-    elAdminBar.classList.toggle('visible', showAdminUI);
-    elLoginStrip.classList.toggle('visible', !_isAdmin);
-
-    // Member preview bar (only admins see the "Back to Admin View" bar)
+    const showAdmin = _isAdmin && !_memberPreview;
+    elAdminBar.classList.toggle('visible', showAdmin);
+    elLoginStrip.classList.toggle('visible', !_isLoggedIn);
     elPreviewBar.classList.toggle('active', _isAdmin && _memberPreview);
-
-    // Admin-mode class on body drives card action visibility
-    document.body.classList.toggle('admin-mode', showAdminUI);
+    document.body.classList.toggle('admin-mode', showAdmin);
     document.body.classList.toggle('member-preview', _memberPreview);
-
-    // Cart button visibility
     document.body.classList.toggle('cart-enabled', _cartEnabled);
-
-    // Sync toggle checkbox
     elCartToggle.checked = _cartEnabled;
   }
 
-  // ── Auth check ────────────────────────────────────────────────
+  // ── Auth init
   async function init() {
-    _isAdmin = await isAdmin();
-
-    // Restore cart toggle state from localStorage (admin-set, persists)
-    const saved = localStorage.getItem(CART_KEY);
-    _cartEnabled = saved === 'true';
-
+    const { data: { user } } = await supabase.auth.getUser();
+    _isLoggedIn = !!user;
+    _userId     = user?.id || null;
+    _isAdmin    = _isLoggedIn ? await isAdmin() : false;
+    _cartEnabled = localStorage.getItem('mca_cart_enabled') === 'true';
     elLoading.style.display = 'none';
     elShop.style.display    = 'block';
-
     applyState();
     loadProducts();
   }
@@ -629,171 +708,120 @@
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
       await init();
     } else if (event === 'SIGNED_OUT') {
-      _isAdmin       = false;
-      _memberPreview = false;
-      elLoading.style.display = 'none';
-      elShop.style.display    = 'block';
-      applyState();
-      loadProducts();
+      _isAdmin = false; _isLoggedIn = false; _userId = null; _memberPreview = false;
+      elLoading.style.display = 'none'; elShop.style.display = 'block';
+      applyState(); loadProducts();
     }
   });
 
-  // ── Cart toggle ───────────────────────────────────────────────
+  // ── Cart toggle
   elCartToggle.addEventListener('change', () => {
     _cartEnabled = elCartToggle.checked;
-    localStorage.setItem(CART_KEY, _cartEnabled);
+    localStorage.setItem('mca_cart_enabled', _cartEnabled);
     applyState();
+    loadProducts();
   });
 
-  // ── View as Member / Back to Admin ────────────────────────────
-  document.getElementById('btn-view-as-member').addEventListener('click', () => {
-    _memberPreview = true;
-    applyState();
-  });
+  // ── View as Member / Back to Admin
+  document.getElementById('btn-view-as-member').addEventListener('click', () => { _memberPreview = true; applyState(); loadProducts(); });
+  document.getElementById('btn-back-admin').addEventListener('click',     () => { _memberPreview = false; applyState(); loadProducts(); });
 
-  document.getElementById('btn-back-admin').addEventListener('click', () => {
-    _memberPreview = false;
-    applyState();
-  });
-
-  // ── Account strip helpers ─────────────────────────────────────
+  // ── Account strip
   function showStripView(id) {
     ['strip-discord-view','strip-email-view','strip-signup-view','strip-confirm-view']
       .forEach(v => document.getElementById(v).style.display = v === id ? 'flex' : 'none');
   }
-
   document.getElementById('btn-strip-discord').addEventListener('click', signInWithDiscord);
+  document.getElementById('strip-toggle-email').addEventListener('click',   () => { document.getElementById('strip-mode-label').textContent = 'Have an account?'; showStripView('strip-email-view'); });
+  document.getElementById('strip-toggle-discord').addEventListener('click', () => { document.getElementById('strip-mode-label').textContent = 'Have an account?'; showStripView('strip-discord-view'); });
+  document.getElementById('strip-toggle-signup').addEventListener('click',  () => { document.getElementById('strip-mode-label').textContent = 'Create an account'; showStripView('strip-signup-view'); });
+  document.getElementById('strip-signup-back').addEventListener('click',    () => { document.getElementById('strip-mode-label').textContent = 'Have an account?'; showStripView('strip-email-view'); });
+  document.getElementById('strip-confirm-back').addEventListener('click',   () => { document.getElementById('strip-mode-label').textContent = 'Have an account?'; showStripView('strip-email-view'); });
 
-  document.getElementById('strip-toggle-email').addEventListener('click', () => {
-    document.getElementById('strip-mode-label').textContent = 'Have an account?';
-    showStripView('strip-email-view');
-  });
-  document.getElementById('strip-toggle-discord').addEventListener('click', () => {
-    document.getElementById('strip-mode-label').textContent = 'Have an account?';
-    showStripView('strip-discord-view');
-  });
-  document.getElementById('strip-toggle-signup').addEventListener('click', () => {
-    document.getElementById('strip-mode-label').textContent = 'Create an account';
-    showStripView('strip-signup-view');
-  });
-  document.getElementById('strip-signup-back').addEventListener('click', () => {
-    document.getElementById('strip-mode-label').textContent = 'Have an account?';
-    showStripView('strip-email-view');
-  });
-  document.getElementById('strip-confirm-back').addEventListener('click', () => {
-    document.getElementById('strip-mode-label').textContent = 'Have an account?';
-    showStripView('strip-email-view');
-  });
-
-  // Sign in
   document.getElementById('btn-strip-signin').addEventListener('click', async () => {
-    const email    = document.getElementById('strip-email').value.trim();
+    const email = document.getElementById('strip-email').value.trim();
     const password = document.getElementById('strip-password').value;
-    const errEl    = document.getElementById('strip-error');
+    const errEl = document.getElementById('strip-error');
     errEl.style.display = 'none';
-    try {
-      await signInWithEmail(email, password);
-    } catch (e) {
-      errEl.textContent   = e.message || 'Sign in failed.';
-      errEl.style.display = 'inline';
-    }
+    try { await signInWithEmail(email, password); }
+    catch(e) { errEl.textContent = e.message || 'Sign in failed.'; errEl.style.display = 'inline'; }
   });
 
-  // Sign up
   document.getElementById('btn-strip-signup').addEventListener('click', async () => {
-    const email    = document.getElementById('strip-signup-email').value.trim();
+    const email = document.getElementById('strip-signup-email').value.trim();
     const password = document.getElementById('strip-signup-password').value;
-    const errEl    = document.getElementById('strip-signup-error');
+    const errEl = document.getElementById('strip-signup-error');
     errEl.style.display = 'none';
-    if (!email || password.length < 6) {
-      errEl.textContent   = 'Valid email and a password of at least 6 characters required.';
-      errEl.style.display = 'inline';
-      return;
-    }
+    if (!email || password.length < 6) { errEl.textContent = 'Valid email and 6+ character password required.'; errEl.style.display = 'inline'; return; }
     const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      errEl.textContent   = error.message || 'Sign up failed.';
-      errEl.style.display = 'inline';
-      return;
-    }
+    if (error) { errEl.textContent = error.message || 'Sign up failed.'; errEl.style.display = 'inline'; return; }
     document.getElementById('strip-mode-label').textContent = '';
     showStripView('strip-confirm-view');
   });
 
-  // ── Sign out ──────────────────────────────────────────────────
-  document.getElementById('btn-signout').addEventListener('click', async () => {
-    await signOut();
-  });
+  document.getElementById('btn-signout').addEventListener('click', async () => await signOut());
 
-  // ── Load products ─────────────────────────────────────────────
+  // ── Load products
   async function loadProducts() {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (error) { elGrid.innerHTML = `<div class="product-empty"><p>Error: ${error.message}</p></div>`; return; }
 
-    if (error) {
-      elGrid.innerHTML = `<div class="product-empty"><p>Error loading products: ${error.message}</p></div>`;
-      return;
-    }
-
-    // Public view: only show active products
     const visible = _isAdmin ? data : data.filter(p => p.active);
-
     elCount.textContent = visible.length === 1 ? '1 product' : `${visible.length} products`;
 
     if (visible.length === 0) {
-      elGrid.innerHTML = `
-        <div class="product-empty">
-          <div class="product-empty-icon">📦</div>
-          <p>${_isAdmin ? 'No products yet. Add your first one above.' : 'No products available yet.'}</p>
-        </div>`;
+      elGrid.innerHTML = `<div class="product-empty"><div class="product-empty-icon">📦</div><p>${_isAdmin ? 'No products yet. Add your first one above.' : 'No products available yet.'}</p></div>`;
       return;
     }
 
-    elGrid.innerHTML = visible.map(p => `
-      <div class="product-card" data-id="${p.id}">
-        ${p.image_url
-          ? `<img class="product-card-img" src="${p.image_url}" alt="${p.name}">`
-          : `<div class="product-card-img-placeholder">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-4 4 4"/><circle cx="8.5" cy="13.5" r="1.5"/></svg>
-             </div>`}
+    const showAdmin = _isAdmin && !_memberPreview;
+
+    elGrid.innerHTML = visible.map(p => {
+      let cartBtn = '';
+      if (_cartEnabled) {
+        if (_isLoggedIn) {
+          const prod = JSON.stringify({id:p.id, name:p.name, price:p.price, image_url:p.image_url||null}).replace(/'/g, "\'");
+          cartBtn = `<button class="btn-add-to-cart" style="display:block;" ${p.inventory === 0 ? 'disabled' : ''} onclick="shopAddToCart(${prod.replace(/"/g, '&quot;')})">
+            ${p.inventory === 0 ? 'Out of Stock' : 'Add to Cart'}
+          </button>`;
+        } else {
+          cartBtn = `<a class="btn-add-to-cart" href="login.html?return=shop.html" style="display:block;text-align:center;text-decoration:none;line-height:2.2;">Sign In to Add to Cart</a>`;
+        }
+      }
+      return `<div class="product-card" data-id="${p.id}">
+        ${p.image_url ? `<img class="product-card-img" src="${p.image_url}" alt="${p.name}">` : `<div class="product-card-img-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-4 4 4"/><circle cx="8.5" cy="13.5" r="1.5"/></svg></div>`}
         <div class="product-card-body">
           ${p.category ? `<div class="product-card-category">${p.category}</div>` : ''}
           <div class="product-card-name">${p.name}</div>
           ${p.description ? `<div class="product-card-desc">${p.description}</div>` : ''}
           <div class="product-card-footer">
             <div class="product-card-price">$${Number(p.price).toFixed(2)}</div>
-            <div class="product-card-stock ${p.inventory === 0 ? 'out' : p.inventory < 5 ? 'low' : ''}">
-              ${p.inventory === 0 ? 'Out of stock' : `${p.inventory} in stock`}
-            </div>
+            <div class="product-card-stock ${p.inventory===0?'out':p.inventory<5?'low':''}">${p.inventory===0?'Out of stock':`${p.inventory} in stock`}</div>
           </div>
-          <button class="btn-add-to-cart" ${p.inventory === 0 ? 'disabled' : ''}>
-            Add to Cart
-          </button>
-          <div class="product-card-actions">
+          ${cartBtn}
+          ${showAdmin ? `<div class="product-card-actions" style="display:flex;">
             <button class="btn-card-edit" onclick="openEdit('${p.id}')">Edit</button>
             <button class="btn-card-delete" onclick="deleteProduct('${p.id}')">Delete</button>
-          </div>
+          </div>` : ''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
-  // ── Modal ─────────────────────────────────────────────────────
+  // ── Modal
   function openModal(product = null) {
-    document.getElementById('modal-product-id').value  = product?.id || '';
-    document.getElementById('modal-name').value        = product?.name || '';
-    document.getElementById('modal-desc').value        = product?.description || '';
-    document.getElementById('modal-price').value       = product?.price || '';
-    document.getElementById('modal-inventory').value   = product?.inventory ?? '';
-    document.getElementById('modal-category').value    = product?.category || '';
-    document.getElementById('modal-active').value      = product ? String(product.active) : 'true';
-    document.getElementById('modal-image').value       = product?.image_url || '';
+    document.getElementById('modal-product-id').value = product?.id || '';
+    document.getElementById('modal-name').value       = product?.name || '';
+    document.getElementById('modal-desc').value       = product?.description || '';
+    document.getElementById('modal-price').value      = product?.price || '';
+    document.getElementById('modal-inventory').value  = product?.inventory ?? '';
+    document.getElementById('modal-category').value   = product?.category || '';
+    document.getElementById('modal-active').value     = product ? String(product.active) : 'true';
+    document.getElementById('modal-image').value      = product?.image_url || '';
     document.getElementById('modal-save-error').style.display = 'none';
     elModalTitle.textContent = product ? 'Edit Product' : 'Add Product';
     elModal.classList.add('open');
   }
-
   function closeModal() { elModal.classList.remove('open'); }
 
   document.getElementById('btn-add-product').addEventListener('click', () => openModal());
@@ -811,39 +839,19 @@
     const active    = document.getElementById('modal-active').value === 'true';
     const image_url = document.getElementById('modal-image').value.trim();
     const errEl     = document.getElementById('modal-save-error');
-
-    if (!name || isNaN(price) || isNaN(inventory)) {
-      errEl.textContent   = 'Name, price, and inventory are required.';
-      errEl.style.display = 'block';
-      return;
-    }
-
-    const payload = {
-      name, description: desc || null, price,
-      inventory, category: category || null,
-      active, image_url: image_url || null
-    };
-
+    if (!name || isNaN(price) || isNaN(inventory)) { errEl.textContent = 'Name, price, and inventory are required.'; errEl.style.display = 'block'; return; }
+    const payload = { name, description: desc||null, price, inventory, category: category||null, active, image_url: image_url||null };
     const { error } = id
       ? await supabase.from('products').update(payload).eq('id', id)
       : await supabase.from('products').insert(payload);
-
-    if (error) {
-      errEl.textContent   = error.message;
-      errEl.style.display = 'block';
-      return;
-    }
-
-    closeModal();
-    loadProducts();
+    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+    closeModal(); loadProducts();
   });
 
-  // ── Edit / Delete (inline onclick) ───────────────────────────
   window.openEdit = async (id) => {
     const { data } = await supabase.from('products').select('*').eq('id', id).single();
     if (data) openModal(data);
   };
-
   window.deleteProduct = async (id) => {
     if (!confirm('Delete this product? This cannot be undone.')) return;
     await supabase.from('products').delete().eq('id', id);
