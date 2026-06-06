@@ -651,9 +651,12 @@
 
   // ── Auth init
   async function init(user) {
+    console.log('init() called, user:', user?.id);
     _isLoggedIn  = !!user;
     _userId      = user?.id || null;
+    console.log('calling isAdmin...');
     _isAdmin     = _isLoggedIn ? await isAdmin(_userId) : false;
+    console.log('isAdmin result:', _isAdmin);
     _cartEnabled = localStorage.getItem('mca_cart_enabled') === 'true';
     elLoading.style.display = 'none';
     elShop.style.display    = 'block';
