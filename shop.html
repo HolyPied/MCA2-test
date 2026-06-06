@@ -661,6 +661,10 @@
     loadProducts();
   }
 
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('AUTH EVENT:', event, session?.user?.id);
+  });
+
   supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
       await init(session?.user || null);
