@@ -14,21 +14,20 @@ export async function getUser() {
   return user;
 }
 
-/** Returns the profile row for the current user, or null */
-export async function getProfile() {
-  const user = await getUser();
-  if (!user) return null;
+/** Returns the profile row for a given user id, or null */
+export async function getProfile(userId) {
+  if (!userId) return null;
   const { data } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
   return data;
 }
 
 /** Returns true if the current user has role = 'admin' */
-export async function isAdmin() {
-  const profile = await getProfile();
+export async function isAdmin(userId) {
+  const profile = await getProfile(userId);
   return profile?.role === 'admin';
 }
 
