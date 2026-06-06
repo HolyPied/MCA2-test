@@ -148,11 +148,16 @@ const NAV_HTML = `
   <ul class="nav-links" id="nav-links">
     <li><a href="index.html"      data-page="index">Home</a></li>
     <li><a href="server.html"     data-page="server">Server</a></li>
-    <li><a href="leadership.html" data-page="leadership">Leadership</a></li>
-    <li><a href="history.html"    data-page="history">History</a></li>
+    <li class="nav-has-dropdown" id="nav-about-item">
+      <a href="#" class="nav-dropdown-trigger" data-page="about" onclick="return false;">About <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></a>
+      <ul class="nav-dropdown" id="nav-about-dropdown">
+        <li><a href="leadership.html" data-page="leadership">Leadership</a></li>
+        <li><a href="history.html"    data-page="history">History</a></li>
+        <li><a href="archive.html"    data-page="archive">Archive</a></li>
+      </ul>
+    </li>
     <li><a href="nations.html"    data-page="nations">Nations</a></li>
     <li><a href="news.html"       data-page="news">News</a></li>
-    <li><a href="archive.html"    data-page="archive">Archive</a></li>
     <li><a href="${DISCORD_URL}" data-discord target="_blank" class="nav-discord">Discord</a></li>
   </ul>
 </nav>
@@ -204,7 +209,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.14</span>
+    <span class="footer-version">v2.4.15</span>
   </div>
 </footer>
 `;
@@ -252,11 +257,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Highlight active nav link based on current filename
+  // Highlight active nav link — also mark About dropdown active if on a child page
   const current = window.location.pathname.split('/').pop() || 'index.html';
   const page = current.replace('.html', '') || 'index';
   const activeLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
-  if (activeLink) activeLink.classList.add('active');
+  if (activeLink) {
+    activeLink.classList.add('active');
+    const parentDropdown = activeLink.closest('.nav-has-dropdown');
+    if (parentDropdown) parentDropdown.querySelector('.nav-dropdown-trigger').classList.add('active');
+  }
+
+  // About dropdown toggle
+  const aboutItem     = document.getElementById('nav-about-item');
+  const aboutDropdown = document.getElementById('nav-about-dropdown');
+  if (aboutItem && aboutDropdown) {
+    aboutItem.querySelector('.nav-dropdown-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      aboutItem.classList.toggle('open');
+    });
+    document.addEventListener('click', e => {
+      if (!aboutItem.contains(e.target)) aboutItem.classList.remove('open');
+    });
+  }
 
   // Hamburger menu toggle
   const hamburger = document.getElementById('nav-hamburger');
