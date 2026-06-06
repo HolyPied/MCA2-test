@@ -209,7 +209,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.15</span>
+    <span class="footer-version">v2.4.16</span>
   </div>
 </footer>
 `;
