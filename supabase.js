@@ -29,10 +29,16 @@ export async function getProfile(userId, accessToken) {
   return data;
 }
 
-/** Returns true if the current user has role = 'admin' */
+/** Returns true if the current user has role = 'admin' or 'super_admin' */
 export async function isAdmin(userId, accessToken) {
   const profile = await getProfile(userId, accessToken);
-  return profile?.role === 'admin';
+  return profile?.role === 'admin' || profile?.role === 'super_admin';
+}
+
+/** Returns true if the current user has role = 'super_admin' */
+export async function isSuperAdmin(userId, accessToken) {
+  const profile = await getProfile(userId, accessToken);
+  return profile?.role === 'super_admin';
 }
 
 /** Sign in with Discord OAuth */

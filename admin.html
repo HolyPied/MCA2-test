@@ -210,13 +210,14 @@
 </div>
 
 <script type="module">
-import { supabase, isAdmin } from './supabase.js';
+import { supabase, isAdmin, isSuperAdmin } from './supabase.js';
 
 const elLoading = document.getElementById('admin-loading');
 const elDenied  = document.getElementById('admin-denied');
 const elMain    = document.getElementById('admin-main');
 
 let _allMembers = [];
+let _isSuperAdmin = false;
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
@@ -224,6 +225,7 @@ async function init() {
   if (!session?.user) { elLoading.style.display = 'none'; elDenied.style.display = 'block'; return; }
   const admin = await isAdmin(session.user.id, session.access_token);
   if (!admin) { elLoading.style.display = 'none'; elDenied.style.display = 'block'; return; }
+  _isSuperAdmin = await isSuperAdmin(session.user.id, session.access_token);
   elLoading.style.display = 'none';
   elMain.style.display = 'block';
   await loadAll();
@@ -261,15 +263,24 @@ function renderMembers(members) {
       : m.minecraft_username
         ? `<span class="badge badge-pending">Pending</span>`
         : `<span class="badge badge-unlinked">None</span>`;
+    const isSA = m.role === 'super_admin';
+    const roleCell = isSA
+      ? `<span class="badge badge-admin" style="background:#1a2e6e;color:#fff;">Super Admin</span>`
+      : _isSuperAdmin
+        ? `<select class="role-select" onchange="updateRole('${m.id}', this.value)">
+             <option value="member" ${m.role === 'member' ? 'selected' : ''}>Member</option>
+             <option value="admin"  ${m.role === 'admin'  ? 'selected' : ''}>Admin</option>
+           </select>`
+        : m.role === 'admin'
+          ? `<span class="badge badge-admin">Admin</span>`
+          : `<select class="role-select" onchange="updateRole('${m.id}', this.value)">
+               <option value="member" ${m.role === 'member' ? 'selected' : ''}>Member</option>
+               <option value="admin"  ${m.role === 'admin'  ? 'selected' : ''}>Admin</option>
+             </select>`;
     return `<tr>
       <td><div class="member-name">${name}</div>${m.username && m.display_name ? `<div class="member-email">@${m.username}</div>` : ''}</td>
       <td><div class="member-email">${m.email || '—'}</div></td>
-      <td>
-        <select class="role-select" onchange="updateRole('${m.id}', this.value)">
-          <option value="member" ${m.role === 'member' ? 'selected' : ''}>Member</option>
-          <option value="admin"  ${m.role === 'admin'  ? 'selected' : ''}>Admin</option>
-        </select>
-      </td>
+      <td>${roleCell}</td>
       <td>${mcBadge}</td>
       <td>
         <div class="btn-actions">
@@ -338,6 +349,8 @@ window.revokeMC = async (id) => {
 };
 
 window.updateRole = async (id, role) => {
+  const target = _allMembers.find(m => m.id === id);
+  if (target?.role === 'super_admin') return; // never downgrade super_admin via UI
   await supabase.from('profiles').update({ role }).eq('id', id);
 };
 
