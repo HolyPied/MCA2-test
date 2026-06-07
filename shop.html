@@ -650,10 +650,10 @@
   }
 
   // ── Auth init
-  async function init(user) {
+  async function init(user, accessToken) {
     _isLoggedIn  = !!user;
     _userId      = user?.id || null;
-    _isAdmin     = _isLoggedIn ? await isAdmin(_userId) : false;
+    _isAdmin     = _isLoggedIn ? await isAdmin(_userId, accessToken) : false;
     _cartEnabled = localStorage.getItem('mca_cart_enabled') === 'true';
     elLoading.style.display = 'none';
     elShop.style.display    = 'block';
@@ -663,7 +663,7 @@
 
   supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-      await init(session?.user || null);
+      await init(session?.user || null, session?.access_token || null);
     } else if (event === 'SIGNED_OUT') {
       _isAdmin = false; _isLoggedIn = false; _userId = null; _memberPreview = false;
       elLoading.style.display = 'none'; elShop.style.display = 'block';

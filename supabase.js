@@ -15,19 +15,23 @@ export async function getUser() {
 }
 
 /** Returns the profile row for a given user id, or null */
-export async function getProfile(userId) {
+export async function getProfile(userId, accessToken) {
   if (!userId) return null;
-  const { data } = await supabase
+  const client = accessToken
+    ? createClient(SUPABASE_URL, SUPABASE_KEY, { global: { headers: { Authorization: `Bearer ${accessToken}` } } })
+    : supabase;
+  const { data, error } = await client
     .from('profiles')
-    .select('*')
+    .select('role')
     .eq('id', userId)
     .single();
+  if (error) console.error('getProfile error:', error.message);
   return data;
 }
 
 /** Returns true if the current user has role = 'admin' */
-export async function isAdmin(userId) {
-  const profile = await getProfile(userId);
+export async function isAdmin(userId, accessToken) {
+  const profile = await getProfile(userId, accessToken);
   return profile?.role === 'admin';
 }
 
