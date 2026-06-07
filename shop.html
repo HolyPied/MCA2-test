@@ -661,10 +661,14 @@
     loadProducts();
   }
 
+  let _initialized = false;
+
   supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !_initialized) {
+      _initialized = true;
       await init(session?.user || null, session?.access_token || null);
     } else if (event === 'SIGNED_OUT') {
+      _initialized = false;
       _isAdmin = false; _isLoggedIn = false; _userId = null; _memberPreview = false;
       elLoading.style.display = 'none'; elShop.style.display = 'block';
       applyState(); loadProducts();

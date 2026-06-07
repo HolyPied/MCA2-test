@@ -209,7 +209,7 @@ const FOOTER_HTML = `
   <div class="footer-disclaimer">
     Not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
     Minecraft is a trademark of Mojang Studios.
-    <span class="footer-version">v2.4.17</span>
+    <span class="footer-version">v2.4.18</span>
   </div>
 </footer>
 `;
@@ -409,8 +409,12 @@ function copyEmail(el) {
       setSignedOut();
     }
     mod.supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) setSignedIn(session.user);
-      else setSignedOut();
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (session?.user) setSignedIn(session.user);
+        else setSignedOut();
+      } else if (event === 'SIGNED_OUT') {
+        setSignedOut();
+      }
     });
     window._mcaUpdateCartBadge = () => {
       mod.supabase.auth.getUser().then(({ data: { user } }) => { if (user) updateCartBadge(user.id); });
