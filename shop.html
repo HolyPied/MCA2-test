@@ -532,8 +532,8 @@
     }
   });
 
-  // Fallback: INITIAL_SESSION may have fired before this listener registered (e.g. nav.js
-  // initialises the Supabase client first). If so, init manually from getSession().
+  // Fallback: INITIAL_SESSION may have fired before this listener registered
+  // (nav.js initialises the Supabase client first). Init manually if needed.
   if (!_initialized) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!_initialized) {
@@ -547,53 +547,13 @@
   document.getElementById('btn-signout').addEventListener('click', async () => await signOut());
 
   // ── Load products
-  async function loadProducts() {
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (error) { elGrid.innerHTML = `<div class="product-empty"><p>Error: ${error.message}</p></div>`; return; }
-    const visible = _isAdmin ? data : data.filter(p => p.active);
-    elCount.textContent = visible.length === 1 ? '1 product' : `${visible.length} products`;
-    if (!visible.length) { elGrid.innerHTML = `<div class="product-empty"><div class="product-empty-icon">📦</div><p>${_isAdmin ? 'No products yet.' : 'No products available yet.'}</p></div>`; return; }
-    const showAdmin = _isAdmin && !_memberPreview;
-    elGrid.innerHTML = visible.map(p => {
-      const cartAllowed = p.cart_enabled !== false;
-      let cartBtn = '';
-      if (cartAllowed) {
-        if (_isLoggedIn) {
-          const prod = JSON.stringify({id:p.id,name:p.name,price:p.price,image_url:p.image_url||null}).replace(/"/g,'&quot;');
-          cartBtn = `<button class="btn-add-to-cart" ${p.inventory===0?'disabled':''} onclick='event.stopPropagation();shopAddToCart(${prod})'>${p.inventory===0?'Out of Stock':'Add to Cart'}</button>`;
-        } else {
-          cartBtn = `<a class="btn-add-to-cart sign-in-prompt" href="login.html?return=shop.html" onclick="event.stopPropagation()">Sign In to Add to Cart</a>`;
-        }
-      }
-      return `<div class="product-card" onclick="openProductDetail('${p.id}')">
-        ${p.image_url ? `<img class="product-card-img" src="${p.image_url}" alt="${p.name}">` : `<div class="product-card-img-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-4 4 4"/><circle cx="8.5" cy="13.5" r="1.5"/></svg></div>`}
-        <div class="product-card-body">
-          ${p.category ? `<div class="product-card-category">${p.category}</div>` : ''}
-          <div class="product-card-name">${p.name}</div>
-          ${p.description ? `<div class="product-card-desc">${p.description}</div>` : ''}
-          <div class="product-card-footer">
-            <div class="product-card-price">$${Number(p.price).toFixed(2)}</div>
-            <div class="product-card-stock ${p.inventory===0?'out':p.inventory<5?'low':''}">${p.inventory===0?'Out of stock':`${p.inventory} in stock`}</div>
-          </div>
-          ${cartBtn}
-          ${showAdmin ? `<div class="product-card-actions" style="display:flex;">
-            <button class="btn-card-edit" onclick="event.stopPropagation();openEdit('${p.id}')">Edit</button>
-            <button class="btn-card-delete" onclick="event.stopPropagation();deleteProduct('${p.id}')">Delete</button>
-          </div>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
   // Store products in memory for detail modal
   let _products = [];
-  const _origLoad = loadProducts;
   window.openProductDetail = async (id) => {
     let p = _products.find(x => x.id === id);
     if (!p) { const { data } = await supabase.from('products').select('*').eq('id', id).single(); p = data; }
     if (p) openDetail(p);
   };
-  // Patch loadProducts to cache results
   async function loadProducts() {
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (error) { elGrid.innerHTML = `<div class="product-empty"><p>Error: ${error.message}</p></div>`; return; }
