@@ -532,6 +532,16 @@
     }
   });
 
+  // Fallback: INITIAL_SESSION may have fired before this listener registered (e.g. nav.js
+  // initialises the Supabase client first). If so, init manually from getSession().
+  if (!_initialized) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!_initialized) {
+      _initialized = true;
+      await init(session?.user || null, session?.access_token || null);
+    }
+  }
+
   document.getElementById('btn-view-as-member').addEventListener('click', () => { _memberPreview = true; applyState(); loadProducts(); });
   document.getElementById('btn-back-admin').addEventListener('click',     () => { _memberPreview = false; applyState(); loadProducts(); });
   document.getElementById('btn-signout').addEventListener('click', async () => await signOut());
