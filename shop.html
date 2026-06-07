@@ -663,6 +663,10 @@
 
   let _initialized = false;
 
+  // Keep shop hidden until auth resolves to prevent flicker
+  elLoading.style.display = 'flex';
+  elShop.style.display = 'none';
+
   supabase.auth.onAuthStateChange(async (event, session) => {
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !_initialized) {
       _initialized = true;
@@ -705,17 +709,19 @@
     const showAdmin = _isAdmin && !_memberPreview;
 
     elGrid.innerHTML = visible.map(p => {
+      // Cart button: always render, content depends on state
       let cartBtn = '';
       if (_cartEnabled) {
         if (_isLoggedIn) {
-          const prod = JSON.stringify({id:p.id, name:p.name, price:p.price, image_url:p.image_url||null}).replace(/'/g, "\'");
-          cartBtn = `<button class="btn-add-to-cart" style="display:block;" ${p.inventory === 0 ? 'disabled' : ''} onclick="shopAddToCart(${prod.replace(/"/g, '&quot;')})">
+          const prod = JSON.stringify({id:p.id, name:p.name, price:p.price, image_url:p.image_url||null}).replace(/"/g, '&quot;');
+          cartBtn = `<button class="btn-add-to-cart" style="display:block;" ${p.inventory === 0 ? 'disabled' : ''} onclick='shopAddToCart(${prod})'>
             ${p.inventory === 0 ? 'Out of Stock' : 'Add to Cart'}
           </button>`;
         } else {
           cartBtn = `<a class="btn-add-to-cart" href="login.html?return=shop.html" style="display:block;text-align:center;text-decoration:none;line-height:2.2;">Sign In to Add to Cart</a>`;
         }
       }
+      // Always render the card — cart toggle never hides products
       return `<div class="product-card" data-id="${p.id}">
         ${p.image_url ? `<img class="product-card-img" src="${p.image_url}" alt="${p.name}">` : `<div class="product-card-img-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9l4-4 4 4 4-4 4 4"/><circle cx="8.5" cy="13.5" r="1.5"/></svg></div>`}
         <div class="product-card-body">
