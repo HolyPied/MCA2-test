@@ -131,6 +131,17 @@
       transition: color 0.15s;
     }
     .login-back-link:hover { color: var(--blue); }
+    .login-forgot-link {
+      display: block; text-align: right;
+      font-size: 11px; color: var(--muted);
+      margin-top: -8px; margin-bottom: 12px;
+      text-decoration: none; transition: color 0.15s;
+    }
+    .login-forgot-link:hover { color: var(--blue); }
+    .password-hint {
+      font-size: 11px; color: var(--muted);
+      margin-top: 4px; line-height: 1.5;
+    }
 
     .login-card-footer {
       padding: 1rem 2rem;
@@ -182,6 +193,7 @@
             <label class="login-form-label" for="signin-password">Password</label>
             <input type="password" id="signin-password" class="login-form-input" placeholder="••••••••" autocomplete="current-password">
           </div>
+          <a href="#" class="login-forgot-link" id="link-forgot-password">Forgot password?</a>
           <div class="login-error" id="signin-error"></div>
           <button class="btn-login-submit" id="btn-email-signin">Sign In</button>
         </div>
@@ -199,7 +211,8 @@
           </div>
           <div class="login-form-group">
             <label class="login-form-label" for="signup-password">Password</label>
-            <input type="password" id="signup-password" class="login-form-input" placeholder="6+ characters" autocomplete="new-password">
+            <input type="password" id="signup-password" class="login-form-input" placeholder="8+ characters" autocomplete="new-password">
+            <div class="password-hint">Must be 8+ characters with at least one uppercase and one lowercase letter.</div>
           </div>
           <div class="login-error" id="signup-error"></div>
           <button class="btn-login-submit" id="btn-email-signup">Create Account</button>
@@ -213,6 +226,22 @@
             <p class="login-success-text">We sent a confirmation link to your email address. Click it to activate your account, then come back to sign in.</p>
           </div>
           <a href="#" class="login-back-link" id="confirm-back">← Back to sign in</a>
+        </div>
+
+        <!-- Forgot password panel -->
+        <div class="login-panel" id="panel-forgot">
+          <div class="login-form-group">
+            <label class="login-form-label" for="forgot-email">Email Address</label>
+            <input type="email" id="forgot-email" class="login-form-input" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="login-error" id="forgot-error"></div>
+          <div class="login-success" id="forgot-success" style="display:none;">
+            <div class="login-success-icon">✉️</div>
+            <div class="login-success-title">Reset link sent</div>
+            <p class="login-success-text">Check your email for a password reset link.</p>
+          </div>
+          <button class="btn-login-submit" id="btn-send-reset">Send Reset Link</button>
+          <a href="#" class="login-back-link" id="forgot-back">← Back to sign in</a>
         </div>
 
       </div>
@@ -309,14 +338,69 @@
     if (e.key === 'Enter') document.getElementById('btn-email-signin').click();
   });
 
+  // ── Forgot password ───────────────────────────────────────
+  document.getElementById('link-forgot-password').addEventListener('click', e => {
+    e.preventDefault();
+    tabs.forEach(t => t.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-forgot').classList.add('active');
+    document.getElementById('login-tabs').style.display = 'none';
+    document.getElementById('login-card-footer').style.display = 'none';
+    cardTitle.textContent = 'Reset Password';
+    // Pre-fill email if already typed
+    const existingEmail = document.getElementById('signin-email').value.trim();
+    if (existingEmail) document.getElementById('forgot-email').value = existingEmail;
+  });
+
+  document.getElementById('forgot-back').addEventListener('click', e => {
+    e.preventDefault();
+    document.getElementById('login-tabs').style.display = '';
+    document.getElementById('login-card-footer').style.display = '';
+    document.getElementById('forgot-success').style.display = 'none';
+    document.getElementById('forgot-error').style.display = 'none';
+    switchTab('signin');
+  });
+
+  document.getElementById('btn-send-reset').addEventListener('click', async () => {
+    const email = document.getElementById('forgot-email').value.trim();
+    const errEl = document.getElementById('forgot-error');
+    errEl.style.display = 'none';
+    if (!email) {
+      errEl.textContent = 'Please enter your email address.';
+      errEl.style.display = 'block'; return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/account.html'
+    });
+    if (error) {
+      errEl.textContent = error.message || 'Could not send reset email.';
+      errEl.style.display = 'block'; return;
+    }
+    document.getElementById('btn-send-reset').style.display = 'none';
+    document.getElementById('forgot-back').style.display = 'none';
+    document.getElementById('forgot-success').style.display = 'block';
+  });
+
   // ── Email sign up ─────────────────────────────────────────────
   document.getElementById('btn-email-signup').addEventListener('click', async () => {
     const email    = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const errEl    = document.getElementById('signup-error');
     errEl.style.display = 'none';
-    if (!email || password.length < 6) {
-      errEl.textContent   = 'Valid email and password of at least 6 characters required.';
+    if (!email) {
+      errEl.textContent   = 'Please enter a valid email address.';
+      errEl.style.display = 'block'; return;
+    }
+    if (password.length < 8) {
+      errEl.textContent   = 'Password must be at least 8 characters.';
+      errEl.style.display = 'block'; return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      errEl.textContent   = 'Password must contain at least one uppercase letter.';
+      errEl.style.display = 'block'; return;
+    }
+    if (!/[a-z]/.test(password)) {
+      errEl.textContent   = 'Password must contain at least one lowercase letter.';
       errEl.style.display = 'block'; return;
     }
     const { error } = await supabase.auth.signUp({ email, password });

@@ -166,6 +166,7 @@ nav {
   font-size: 13px; font-weight: 500; color: var(--mid);
   background: none; border: none; cursor: pointer;
   text-align: left; transition: background 0.12s, color 0.12s;
+  text-decoration: none;
 }
 .nav-account-dropdown-item:hover { background: var(--bg); color: var(--black); }
 

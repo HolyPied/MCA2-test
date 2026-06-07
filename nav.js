@@ -379,6 +379,7 @@ function copyEmail(el) {
           ${label}
         </button>
         <div class="nav-account-dropdown" id="nav-account-dropdown">
+          <a class="nav-account-dropdown-item" href="account.html">My Account</a>
           <button class="nav-account-dropdown-item" id="nav-signout-btn">Sign Out</button>
         </div>
       </div>`;
@@ -396,7 +397,7 @@ function copyEmail(el) {
         const mod = await import('./supabase.js');
         await mod.signOut();
       } catch(e) {}
-      window.location.reload();
+      window.location.href = 'login.html';
     });
   }
 

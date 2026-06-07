@@ -28,6 +28,9 @@ async function getDocumentList() {
   const res = await fetch(ARCH_API, {
     headers: { 'Accept': 'application/vnd.github+json' }
   });
+  if (res.status === 403 || res.status === 429) {
+    throw new Error(`GitHub API rate limit reached. Please try again in a few minutes. (${res.status})`);
+  }
   if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
   const files = await res.json();
 
@@ -312,8 +315,14 @@ async function loadDocumentReader() {
 }
 
 /* ── ROUTER ─────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
+function initArchive() {
   const page = window.location.pathname.split('/').pop();
   if (page === 'archive.html')   loadArchiveIndex();
   if (page === 'document.html')  loadDocumentReader();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initArchive);
+} else {
+  initArchive();
+}

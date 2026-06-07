@@ -158,13 +158,35 @@
     <!-- Password -->
     <div class="account-section" id="section-password">
       <div class="account-section-header">
-        <div class="account-section-title">Password</div>
+        <div class="account-section-title">Change Password</div>
       </div>
       <div class="account-section-body">
-        <p class="form-hint" style="margin-bottom:1rem;">We'll send a password reset link to your email address.</p>
+        <div class="form-group">
+          <label class="form-label" for="field-new-password">New Password</label>
+          <input type="password" id="field-new-password" class="form-input" placeholder="8+ characters" autocomplete="new-password">
+          <div class="form-hint">8+ characters, at least one uppercase and one lowercase letter.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="field-confirm-password">Confirm New Password</label>
+          <input type="password" id="field-confirm-password" class="form-input" placeholder="Repeat password" autocomplete="new-password">
+        </div>
         <div class="form-success" id="password-success"></div>
         <div class="form-error" id="password-error"></div>
-        <button class="btn btn-outline" id="btn-reset-password">Send Reset Link</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" id="btn-change-password">Update Password</button>
+          <button class="btn btn-outline" id="btn-reset-password">Send Reset Email Instead</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sign Out -->
+    <div class="account-section">
+      <div class="account-section-header">
+        <div class="account-section-title">Sign Out</div>
+      </div>
+      <div class="account-section-body">
+        <p class="form-hint" style="margin-bottom:1rem;">Sign out of your MCA account on this device.</p>
+        <button class="btn btn-danger" id="btn-sign-out">Sign Out</button>
       </div>
     </div>
 
@@ -199,8 +221,8 @@ let _verifyCode = null;
 async function init() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) {
-    elLoading.style.display = 'none';
-    elNotSignedIn.style.display = 'block';
+    // Redirect to login with return URL
+    window.location.replace('login.html?return=account.html');
     return;
   }
   _user = session.user;
@@ -246,6 +268,9 @@ function renderConnectedAccounts() {
   const identities = _user.identities || [];
   const hasDiscord = identities.some(i => i.provider === 'discord') || !!_profile.discord_id;
   const hasEmail   = !!_user.email;
+  // Only allow unlink if user has more than one login method
+  const canUnlinkDiscord = hasDiscord && hasEmail;
+  const canUnlinkEmail   = hasEmail && hasDiscord;
 
   el.innerHTML = `
     <div class="connected-row">
@@ -258,7 +283,12 @@ function renderConnectedAccounts() {
           <div class="connected-provider-detail">${hasEmail ? _user.email : 'Not connected'}</div>
         </div>
       </div>
-      ${!hasEmail ? `<button class="btn btn-outline" id="btn-add-email">Add Email</button>` : `<span class="account-section-badge badge-linked">Connected</span>`}
+      ${!hasEmail
+        ? `<button class="btn btn-outline" id="btn-add-email">Add Email</button>`
+        : canUnlinkEmail
+          ? `<button class="btn btn-danger" id="btn-unlink-email">Unlink</button>`
+          : `<span class="account-section-badge badge-linked">Connected</span>`
+      }
     </div>
     <div class="connected-row">
       <div class="connected-provider">
@@ -271,8 +301,10 @@ function renderConnectedAccounts() {
         </div>
       </div>
       ${!hasDiscord
-        ? `<button class="btn btn-discord" id="btn-link-discord"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.057a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg> Link Discord</button>`
-        : `<span class="account-section-badge badge-linked">Connected</span>`
+        ? `<button class="btn btn-discord" id="btn-link-discord"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.057a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.030z"/></svg> Link Discord</button>`
+        : canUnlinkDiscord
+          ? `<button class="btn btn-danger" id="btn-unlink-discord">Unlink</button>`
+          : `<span class="account-section-badge badge-linked">Connected</span>`
       }
     </div>`;
 
@@ -282,6 +314,37 @@ function renderConnectedAccounts() {
         provider: 'discord',
         options: { redirectTo: window.location.origin + '/account.html' }
       });
+    });
+  }
+  if (canUnlinkDiscord) {
+    document.getElementById('btn-unlink-discord')?.addEventListener('click', async () => {
+      if (!confirm('Unlink Discord from your account? You will still be able to sign in with email.')) return;
+      // Remove from Supabase identities
+      const discordIdentity = (_user.identities || []).find(i => i.provider === 'discord');
+      if (discordIdentity) {
+        const { error } = await supabase.auth.unlinkIdentity(discordIdentity);
+        if (error) { alert('Could not unlink Discord: ' + error.message); return; }
+      }
+      // Also clear discord_id from profile
+      await supabase.from('profiles').update({ discord_id: null }).eq('id', _user.id);
+      _profile.discord_id = null;
+      // Refresh user data
+      const { data: { user } } = await supabase.auth.getUser();
+      _user = user;
+      renderConnectedAccounts();
+    });
+  }
+  if (canUnlinkEmail) {
+    document.getElementById('btn-unlink-email')?.addEventListener('click', async () => {
+      if (!confirm('Unlink email/password from your account? You will only be able to sign in with Discord.')) return;
+      const emailIdentity = (_user.identities || []).find(i => i.provider === 'email');
+      if (emailIdentity) {
+        const { error } = await supabase.auth.unlinkIdentity(emailIdentity);
+        if (error) { alert('Could not unlink email: ' + error.message); return; }
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      _user = user;
+      renderConnectedAccounts();
     });
   }
   if (!hasEmail) {
@@ -414,6 +477,33 @@ document.getElementById('btn-save-profile').addEventListener('click', async () =
   setTimeout(() => succEl.style.display = 'none', 3000);
 });
 
+// ── Password change ───────────────────────────────────────────
+document.getElementById('btn-change-password').addEventListener('click', async () => {
+  const newPass  = document.getElementById('field-new-password').value;
+  const confPass = document.getElementById('field-confirm-password').value;
+  const errEl    = document.getElementById('password-error');
+  const succEl   = document.getElementById('password-success');
+  errEl.style.display = 'none'; succEl.style.display = 'none';
+  if (newPass.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return;
+  }
+  if (!/[A-Z]/.test(newPass)) {
+    errEl.textContent = 'Password must contain at least one uppercase letter.'; errEl.style.display = 'block'; return;
+  }
+  if (!/[a-z]/.test(newPass)) {
+    errEl.textContent = 'Password must contain at least one lowercase letter.'; errEl.style.display = 'block'; return;
+  }
+  if (newPass !== confPass) {
+    errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return;
+  }
+  const { error } = await supabase.auth.updateUser({ password: newPass });
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+  document.getElementById('field-new-password').value = '';
+  document.getElementById('field-confirm-password').value = '';
+  succEl.textContent = 'Password updated successfully.'; succEl.style.display = 'block';
+  setTimeout(() => succEl.style.display = 'none', 4000);
+});
+
 // ── Password reset ────────────────────────────────────────────
 document.getElementById('btn-reset-password').addEventListener('click', async () => {
   const errEl  = document.getElementById('password-error');
@@ -425,6 +515,12 @@ document.getElementById('btn-reset-password').addEventListener('click', async ()
   });
   if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
   succEl.textContent = 'Reset link sent — check your email.'; succEl.style.display = 'block';
+});
+
+// ── Sign out ──────────────────────────────────────────────────
+document.getElementById('btn-sign-out').addEventListener('click', async () => {
+  await signOut();
+  window.location.replace('login.html');
 });
 
 init();
